@@ -1,10 +1,10 @@
 const prisma = require("../config/prisma.mjs");
 
+
 const getProducts = async () => {
     return prisma.default.product.findMany();
 };
 const createProduct = async(data) => {
-     console.log(Object.keys(prisma.default));
     return prisma.default.product.create({
         data
     })

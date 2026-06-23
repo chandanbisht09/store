@@ -11,19 +11,36 @@ datasource db {
    provider = "sqlite"
    url = "file:./dev.db"
 }
+model Media {
+  id          Int      @id @default(autoincrement())
+  fileName    String
+  filePath    String
+  mimeType    String?
+  fileSize    Int?
+  altText     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  productMedia ProductMedia[]
+}
 
 model Category {
   id          Int      @id @default(autoincrement())
-  name        String  
+  name        String @unique
+  slug        String   @unique
+  description String?
   isEnabled   Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  products    Product[]
 }
 
 model Product {
   id          Int      @id @default(autoincrement())
-  title        String  
-  catgoryId   Int
+  title        String  @unique
+  slug        String   @unique
+  sku         String?  @unique
+  categoryId  Int
+  category    Category? @relation(fields: [categoryId], references: [id])
   qty         Int
   price       Int
   dicountedPrice  Int
@@ -33,4 +50,21 @@ model Product {
   isEnabled   Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  productMedia ProductMedia[]
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model ProductMedia {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  mediaId     Int
+  isPrimary   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media       Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  @@unique([productId, mediaId])
+  @@index([productId])
+  @@index([mediaId])
 }

@@ -1,13 +1,22 @@
 const categoryService = require("../services/categoryService");
 
 const getCategories = async (req, res) => {
+  
   const categories = await categoryService.getCategories();
   res.json(categories);
 };
 
-const createCategory = async (req, res) => {
-  const category = await categoryService.createCategory(req.body);
-  res.status(201).json(category);
+const createCategory = async (req, res,next) => {
+  try{
+    let body = req.body;
+    let name = (req.body.name).toLowerCase();
+    body['slug'] =  name.replaceAll(' ','-');
+    const category = await categoryService.createCategory(body);
+    res.status(201).json(category);
+    
+  }catch(error){
+    next(error)
+  }
 };
 
 const getCategory = async (req, res) => {
