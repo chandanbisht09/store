@@ -5,7 +5,7 @@ const productMediaService = require("../services/productMediaService")
 
 
 const getProducts = async (req, res) => {
-  const products = await productService.getProducts();
+  const products = await productService.getProducts(req.query);
   res.json(products);
 };
 
@@ -17,7 +17,7 @@ const createProduct = async (req, res,next) => {
       body['categoryId'] = parseInt(body.categoryId);
       body['qty'] = parseInt(body.qty);
       body['price'] = parseInt(body.price);
-      body['dicountedPrice'] = parseInt(body.discountedPrice);
+      body['discountedPrice'] = parseInt(body.discountedPrice);
       const product = await productService.createProduct(body)
       const primaryFile = req.files.primaryImage?.[0];
       if (primaryFile) {

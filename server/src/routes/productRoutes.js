@@ -22,7 +22,7 @@ router.post("/",
       maxCount: 10
     }
   ]),
-    validate(createProductSchema),
+   validate(createProductSchema),
     productController.createProduct); 
 
 router.get("/:id", productController.getProduct); 

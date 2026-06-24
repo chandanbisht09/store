@@ -1,7 +1,7 @@
-const prisma = require("../config/prisma.mjs");
+const prisma = require("../config/prisma.js");
 
 const saveProductMedia = async (data) => {
-    return prisma.default.productMedia.create({data});
+    return prisma.productMedia.create({data});
 };
 module.exports = {
     saveProductMedia
