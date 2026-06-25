@@ -43,6 +43,12 @@ const getProducts = async (data) => {
       where.price.lte = parseInt(data.maxPrice);
     }
   }
+    let orderBy = {id: 'desc'};
+    if(data.sort && (data.sort === 'price_asc' || data.sort === 'price_desc')){
+      let order = (data.sort).split('_')
+      orderBy = {price : order[1]}
+    }
+    console.log(orderBy)
     const page = Number(data.page || 1);
     const pageSize = Number(data.pageSize || 20);
     console.log(where)
@@ -50,9 +56,7 @@ const getProducts = async (data) => {
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: {
-        id: "desc"
-      }
+      orderBy
     });
 };
 const createProduct = async(data) => {
@@ -60,7 +64,7 @@ const createProduct = async(data) => {
         data
     })
 };
-const getProduct = async(data) => {
+const getProductById = async(data) => {
     return prisma.product.findFirstOrThrow({ where : {
         id : data['id']
     }        
@@ -74,6 +78,7 @@ const deleteProduct = async (id ,data) => {
   )
 };
 const updateProduct = async (id ,data) => {
+  console.log(data)
   return prisma.product.update(
     {
       where: { id: parseInt(id) },
@@ -81,10 +86,21 @@ const updateProduct = async (id ,data) => {
     }
   )
 };
+const inventoryHistory = async (id) => {
+  return prisma.inventoryTransaction.findMany({
+  where: {
+    productId: Number(id)
+  },
+  orderBy: {
+    createdAt: "desc"
+  }
+});
+};
 module.exports = {
   createProduct,
   getProducts,
-  getProduct,
+  getProductById,
   deleteProduct,
-  updateProduct
+  updateProduct,
+  inventoryHistory
 };

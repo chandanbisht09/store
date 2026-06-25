@@ -51,6 +51,8 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   productMedia ProductMedia[]
+  inventoryTransactions InventoryTransaction[]
+  orderItem   OrderItem[]
   @@index([categoryId])
   @@index([slug])
 }
@@ -67,4 +69,98 @@ model ProductMedia {
   @@unique([productId, mediaId])
   @@index([productId])
   @@index([mediaId])
+}
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName String?
+  email     String   @unique
+  mobile   String?  @unique
+  password  String
+  role      UserRole @default(CUSTOMER)
+  isEnabled Boolean  @default(true)
+  addresses  Address[]
+  orders     Order[] 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+model Address {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  type        AddressType @default(HOME)
+  label       String?
+  firstName   String
+  lastName    String?
+  mobile      String
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  country     String
+  postalCode  String
+  isDefault   Boolean     @default(false)
+  user        User        @relation(fields: [userId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  totalAmount Int
+  status      OrderStatus @default(PENDING)
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+  inventoryTransactions InventoryTransaction[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  productId   Int
+  productTitle String
+  qty         Int
+  unitPrice   Int
+  totalPrice  Int
+  order       Order    @relation(fields: [orderId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+enum InventoryTransactionType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+}
+
+model InventoryTransaction {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  orderId    Int?
+  qty        Int
+  type       InventoryTransactionType
+  notes      String?
+  product    Product @relation(fields: [productId], references: [id])
+  order      Order?  @relation(fields: [orderId], references: [id])
+  createdAt  DateTime @default(now())
+  @@index([productId])
+  @@index([orderId])
 }
