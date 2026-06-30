@@ -44,12 +44,34 @@ const updateCart = async (req, res,next) => {
         next(error)
     }
 }
-
-
+const updateItem = async (req, res,next)=> {
+    try{
+        const updatedCart = await cartService.updateItem(req.params.id,req.user.userId,req.body);
+         res.status(200).json({
+           message : "Cart updated",
+           data : updatedCart
+        }); 
+    }catch(error){
+        next(error)
+    }
+}
+const deleteItem = async (req,res,next) => {
+    try{
+        const updatedCart = await cartService.deleteItem(req.params.id,req.user.userId);
+        res.status(200).json({
+           message : "Cart updated",
+           data : updatedCart
+        }); 
+    }catch(error){
+        next(error)
+    }
+}
 
 module.exports = {
     createCart,
     getCart,
     updateCart,
-    clearCart
+    clearCart,
+    updateItem,
+    deleteItem
 }

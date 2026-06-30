@@ -52,8 +52,7 @@ const createProduct = async (req, res,next) => {
         });
       }
       res.status(201).json(product);  
-       next(error);
-    }catch (error) {
+   }catch (error) {
       if (req.files && req.files.length > 0) {
         await Promise.all(
           req.files.map(file => fs.unlink(file.path))

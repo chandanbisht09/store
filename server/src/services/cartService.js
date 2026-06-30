@@ -1,73 +1,76 @@
 const prisma = require("../config/prisma.js");
 const { calculateCartSummary } = require("../helpers/cartHelper");
+const AppError = require("../utils/appError.js");
 
-const createCart = async (cart) => {
-  const { cartItems, userId } = cart;
+const createCart = async (cartData) => {
+  const userId = Number(cartData.userId);
+  const { cartItems } = cartData;
 
   return await prisma.$transaction(async (tx) => {
 
-    const createdCart = await tx.cart.create({
-      data: {
+    let cart = await tx.cart.findUnique({
+      where: {
         userId
       }
     });
 
-    await tx.cartItem.createMany({
-      data: cartItems.map(item => ({
-        ...item,
-        cartId: createdCart.id
-      }))
-    });
+    if (!cart) {
+      cart = await tx.cart.create({
+        data: {
+          userId
+        }
+      });
+    }
 
-    const userCart = await tx.cart.findUnique({
-      where: {
-        id: createdCart.id
-      },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: true
-              }
-            }
+    for (const item of cartItems) {
+
+      const existingItem = await tx.cartItem.findUnique({
+        where: {
+          cartId_variantId: {
+            cartId: cart.id,
+            variantId: Number(item.variantId)
           }
         }
-      }
-    });
+      });
 
-    const cartSummary = calculateCartSummary(userCart.items);
-    return {
-            id: userCart.id,
-            userId: userCart.userId,
-            ...cartSummary
-        };
-    });
+      if (existingItem) {
+
+        await tx.cartItem.update({
+          where: {
+            id: existingItem.id
+          },
+          data: {
+            qty: {
+              increment: Number(item.qty)
+            }
+          }
+        });
+
+      } else {
+
+        await tx.cartItem.create({
+          data: {
+            cartId: cart.id,
+            variantId: Number(item.variantId),
+            qty: Number(item.qty)
+          }
+        });
+
+      }
+    }
+    return await calculateCartSummary(tx, cart.id);
+
+  });
 };
 const getCart = async(userId) => {
-    const userCart = await prisma.cart.findUnique({
+   return await prisma.$transaction(async (tx) => {
+    let cart = await tx.cart.findUnique({
       where: {
-        userId: userId
-      },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: {
-                product: true
-              }
-            }
-          }
-        }
+        userId
       }
     });
-
-    const cartSummary = calculateCartSummary(userCart.items);
-    return {
-        id: userCart.id,
-        userId: userCart.userId,
-        ...cartSummary
-    };    
+    return await calculateCartSummary(tx, cart.id);
+  })
 }
 const clearCart = async (userId) => {
   const cart = await prisma.cart.findUnique({
@@ -92,9 +95,68 @@ const clearCart = async (userId) => {
     message: "Cart cleared successfully."
   };
 };
+const updateItem = async (itemId, userId, data) => {
+  const cartItem = await prisma.cartItem.findFirst({
+    where: {
+      id: Number(itemId),
+      cart: {
+        userId: Number(userId)
+      }
+    }
+  });
+
+  if (!cartItem) {
+    throw new AppError("Cart item not found.", 404);
+  }
+
+  const qty = Number(data.qty);
+
+  if (qty <= 0) {
+    throw new AppError("Quantity must be greater than 0.", 400);
+  }
+
+  if (cartItem.qty === qty) {
+    throw new AppError("Quantity is already up to date.", 400);
+  }
+
+  await prisma.cartItem.update({
+    where: {
+      id: cartItem.id
+    },
+    data: {
+      qty
+    }
+  });
+
+  return await calculateCartSummary(prisma, cartItem.cartId);
+};
+const deleteItem = async (itemId,userId) => {
+   const itemExist = await prisma.cartItem.findFirst({
+      where : {
+        id : Number(itemId),
+        cart : {userId : userId}
+        
+      }
+   })
+
+   if (!itemExist){
+      throw new AppError("Item does not exists",  400);
+   }
+   await prisma.cartItem.delete({
+     where : {id : Number(itemId)}
+   })
+
+   const response =  await calculateCartSummary(prisma,itemExist.cartId);
+   if (!response){
+      throw new AppError("Cart is empty",  400);
+   }
+   return response;
+}
 
 module.exports = {
     createCart,
     getCart,
-    clearCart
+    clearCart,
+    updateItem,
+    deleteItem
 }
